@@ -1,16 +1,6 @@
 version: '3.0'
 services:
   barista-service:
-    image: sushmagowda321/barista
+    build: . 
     ports:
-      - 11:80
-
-  health-service:
-    image: sushmagowda321/health
-    ports:
-      - 12:80
-
-  finance-service:
-   image: sushmagowda321/finance
-   ports:
-     - 13:80
+      - 8082:8080
