@@ -18,15 +18,6 @@ pipeline {
               sh 'mvn compile'
             }
         }
-         stage('code analysis') {
-            steps {
-              withSonarQubeEnv('sonar-server') {
-               sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=Java-Springboot \
-               -Dsonar.java.binaries=. \
-               -Dsonar.projectKey=Java-Springboot'''
-              }
-            }
-        }
         stage('package') {
             steps {
               sh 'mvn install'
