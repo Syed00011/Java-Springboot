@@ -10,7 +10,7 @@ pipeline {
     stages {
         stage('git checkout') {
             steps {
-             git 'https://github.com/Sushmaa123/Java-Springboot.git'
+             git 'https://github.com/Syed00011/Java-Springboot.git'
             }
         }
          stage('compile') {
@@ -75,10 +75,6 @@ pipeline {
     post {
         always {
             echo 'slack Notification.'
-            slackSend channel: '#general',
-            color: COLOR_MAP [currentBuild.currentResult],
-            message: "*${currentBuild.currentResult}:* Job ${env.JOB_NAME} build ${env.BUILD_NUMBER} \n More info at: ${env.BUILD_URl}"
-            
         }
     }
 }
