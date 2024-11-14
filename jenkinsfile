@@ -22,7 +22,7 @@ pipeline {
          stage('docker build') {
             steps {
              script {
-                 withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
+                  {
                     bat 'docker build -t ci-cd .'
                   }
               }
