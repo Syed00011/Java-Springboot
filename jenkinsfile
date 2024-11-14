@@ -6,7 +6,7 @@ pipeline {
     stages {
         stage('git checkout') {
             steps {
-                sh 'git clone https://github.com/Syed00011/Java-Springboot.git'
+                bat 'git clone https://github.com/Syed00011/Java-Springboot.git'
             }
         }
         stage('compile') {
@@ -22,15 +22,25 @@ pipeline {
         stage('docker build') {
             steps {
                 script {
-                    bat 'docker build -t ci-cd .'
+                    try {
+                        bat 'docker build -t ci-cd .'
+                    } catch (Exception e) {
+                        currentBuild.result = 'FAILURE'
+                        error "Docker build failed: ${e.message}"
+                    }
                 }
             }
         }
         stage('docker container') {
             steps {
                 script {
-                    withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
-                        bat 'docker run -itd --name ci-cd-container -p 57:8080 ci-cd'
+                    try {
+                        withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
+                            bat 'docker run -itd --name ci-cd-container -p 57:8080 ci-cd'
+                        }
+                    } catch (Exception e) {
+                        currentBuild.result = 'FAILURE'
+                        error "Docker container failed: ${e.message}"
                     }
                 }
             }
@@ -38,16 +48,11 @@ pipeline {
         stage('docker compose') {
             steps {
                 script {
-                    withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
-                        bat 'docker-compose up -d'
-                    }
-                }
-            }
-        }
-    }
-    post {
-        always {
-            echo 'Slack Notification.'
-        }
-    }
-}
+                    try {
+                        withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
+                            bat 'docker-compose up -d'
+                        }
+                    } catch (Exception e) {
+                        currentBuild.result = 'FAILURE'
+                        error "Docker Compose failed: ${e.message}"
+                 
