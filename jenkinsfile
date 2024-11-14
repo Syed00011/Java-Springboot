@@ -6,7 +6,7 @@ pipeline {
     stages {
         stage('git checkout') {
             steps {
-                bat 'git clone https://github.com/Syed00011/Java-Springboot.git'
+                sh 'git clone https://github.com/Syed00011/Java-Springboot.git'
             }
         }
         stage('compile') {
