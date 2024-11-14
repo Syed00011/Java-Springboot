@@ -1,67 +1,53 @@
 pipeline {
     agent any
-     environment {
+    environment {
         SCANNER_HOME = tool 'sonarqube'
     }
     stages {
         stage('git checkout') {
             steps {
-             git 'https://github.com/Syed00011/Java-Springboot.git'
+                bat 'git clone https://github.com/Syed00011/Java-Springboot.git'
             }
         }
-         stage('compile') {
+        stage('compile') {
             steps {
-              bat 'mvn compile'
+                bat 'mvn compile'
             }
         }
         stage('package') {
             steps {
-              bat 'mvn install'
+                bat 'mvn install'
             }
         }
-         stage('docker build') {
+        stage('docker build') {
             steps {
-             script {
-                  {
+                script {
                     bat 'docker build -t ci-cd .'
-                  }
-              }
+                }
             }
         }
-         stage('docker push') {
-            steps {
-             script {
-                withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
-                    sh 'docker tag ci-cd sushmagowda321/dev:1.0'
-                    sh 'docker push sushmagowda321/dev:1.0'
-                  }
-              }
-            }
-         }    
         stage('docker container') {
             steps {
-             script {
-                   withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
-                    sh 'docker run -itd --name ci-cd-container -p 57:8080 ci-cd'
-                  }
-              }
+                script {
+                    withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
+                        bat 'docker run -itd --name ci-cd-container -p 57:8080 ci-cd'
+                    }
+                }
             }
         }
         stage('docker compose') {
             steps {
-             script {
-                 withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
-                    sh 'docker-compose up -d'
-                  }
-              }
+                script {
+                    withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
+                        bat 'docker-compose up -d'
+                    }
+                }
             }
         }
-
-    }	
- 
+    }
     post {
         always {
-            echo 'slack Notification.'
+            echo 'Slack Notification.'
         }
     }
 }
