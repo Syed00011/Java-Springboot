@@ -1,12 +1,11 @@
 pipeline {
     agent any
     tools {
-        maven 'maven'
-        docker 'docker'  // Ensure Docker is available in the environment
+        maven 'maven3'  // Ensure Maven is available in the environment
     }
     environment {
-        BACKUP_DIR = '/path/to/backup/folder'
-        ARTIFACT_NAME = 'my-artifact.jar' // Replace with your artifact name
+        BACKUP_DIR = '/home/ec2-user/backup-jenkins'
+        ARTIFACT_NAME = 'demo-0.0.1-SNAPSHOT.jar' // Default artifact name (if needed)
     }
     stages {
         stage('Git Checkout') {
@@ -47,13 +46,36 @@ pipeline {
             }
         }
 
+        stage('Select Latest Backup') {
+            steps {
+                script {
+                    // Find the most recent backup JAR file from the backup directory
+                    def latestBackup = sh(script: "ls -t ${BACKUP_DIR}/backup-*.jar | head -n 1", returnStdout: true).trim()
+                    echo "Latest backup found: ${latestBackup}"
+                    
+                    // Copy the latest backup JAR to the Docker build context
+                    sh "cp ${latestBackup} demo-0.0.1-SNAPSHOT.jar"
+                }
+            }
+        }
+
+        stage('Clean Up Previous Docker Containers and Images') {
+            steps {
+                script {
+                    // Stop and remove the existing container if it is running
+                    sh 'docker ps -q -f name=ci-cd-container | xargs -r docker stop | xargs -r docker rm'
+
+                    // Remove the existing Docker image if it exists
+                    sh 'docker images -q java-spring | xargs -r docker rmi'
+                }
+            }
+        }
+
         stage('Docker Build') {
             steps {
                 script {
                     // Build Docker image
-                    withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
-                        sh 'docker build -t java-spring .'
-                    }
+                    sh 'docker build -t java-spring .'
                 }
             }
         }
@@ -62,9 +84,7 @@ pipeline {
             steps {
                 script {
                     // Run the Docker container
-                    withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
-                        sh 'docker run -itd --name ci-cd-container -p 8085:8081 java-spring'
-                    }
+                    sh 'docker run -itd --name ci-cd-container -p 8085:8081 java-spring'
                 }
             }
         }
