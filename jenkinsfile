@@ -1,77 +1,79 @@
-def COLOR_MAP = [
-    'SUCCESS': 'good',
-    'FAILURE': 'danger'
-    ]
 pipeline {
     agent any
     tools {
-    maven 'maven'
-  }
-     environment {
-        SCANNER_HOME = tool 'sonarqube'
+        maven 'maven'
+        docker 'docker'  // Ensure Docker is available in the environment
+    }
+    environment {
+        BACKUP_DIR = '/path/to/backup/folder'
+        ARTIFACT_NAME = 'my-artifact.jar' // Replace with your artifact name
     }
     stages {
-        stage('git checkout') {
+        stage('Git Checkout') {
             steps {
-             git 'https://github.com/Sushmaa123/Java-Springboot.git'
+                // Checkout the code from the repository (your GitHub repo)
+                git 'https://github.com/Syed00011/Java-Springboot.git'
             }
         }
-         stage('compile') {
+
+        stage('Compile') {
             steps {
-              sh 'mvn compile'
+                // Compile your project
+                sh 'mvn compile'
             }
         }
-         stage('code analysis') {
+
+        stage('Package') {
             steps {
-              withSonarQubeEnv('sonar-server') {
-               sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=Java-Springboot \
-               -Dsonar.java.binaries=. \
-               -Dsonar.projectKey=Java-Springboot'''
-              }
+                // Build the project artifact
+                sh 'mvn install'
             }
         }
-        stage('package') {
+
+        stage('Create Versioned Backup') {
             steps {
-              sh 'mvn install'
+                script {
+                    // Define the backup version based on build number or timestamp
+                    def backupVersion = "backup-${BUILD_NUMBER}-${env.BUILD_ID}.jar"
+                    
+                    // Create a new folder for the versioned backup if it doesn't exist
+                    sh "mkdir -p ${BACKUP_DIR}"
+                    
+                    // Move or copy the artifact to the versioned backup folder
+                    sh "cp target/${ARTIFACT_NAME} ${BACKUP_DIR}/${backupVersion}"
+                    
+                    echo "Artifact backed up as ${BACKUP_DIR}/${backupVersion}"
+                }
             }
         }
-         stage('docker build') {
+
+        stage('Docker Build') {
             steps {
-             script {
-                 withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
-                    sh 'docker build -t java-spring .'
-                  }
-              }
+                script {
+                    // Build Docker image
+                    withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
+                        sh 'docker build -t java-spring .'
+                    }
+                }
             }
         }
-         stage('docker push') {
+
+        stage('Run Docker Container') {
             steps {
-             script {
-                withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
-                    sh 'docker tag java-spring sushmagowda321/java-spring'
-                    sh 'docker push sushmagowda321/java-spring'
-                  }
-              }
+                script {
+                    // Run the Docker container
+                    withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
+                        sh 'docker run -itd --name ci-cd-container -p 8085:8081 java-spring'
+                    }
+                }
             }
-         }    
-        stage('docker container') {
-            steps {
-             script {
-                   withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
-                    sh 'docker run -itd --name ci-cd-container -p 8085:8081 java-spring'
-                  }
-              }
-            }
-        }    
-    }	
- 
+        }
+    }
+
     post {
         always {
-            echo 'slack Notification.'
-            slackSend channel: '#ci-cd-pipeline',
-            color: COLOR_MAP [currentBuild.currentResult],
-            message: "*${currentBuild.currentResult}:* Job ${env.JOB_NAME} build ${env.BUILD_NUMBER} \n More info at: ${env.BUILD_URl}"
-            
+            // Post build actions (no Slack notification now)
+            echo "Build finished with status: ${currentBuild.currentResult}"
         }
     }
 }
