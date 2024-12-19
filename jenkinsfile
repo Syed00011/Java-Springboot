@@ -75,7 +75,7 @@ pipeline {
             steps {
                 script {
                     // Build Docker image
-                    sh 'docker build -t java-spring .'
+                    sh "docker build --build-arg ARTIFACT_NAME=${latestBackup} -t java-spring ."
                 }
             }
         }
