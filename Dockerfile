@@ -11,7 +11,7 @@ ARG ARTIFACT_NAME
 COPY target/${ARTIFACT_NAME} /app/application.jar
 
 # Expose the port the application will run on
-EXPOSE 8080
+EXPOSE 8081
 
 # Command to run the application inside the container
 ENTRYPOINT ["java", "-jar", "/app/application.jar"]
